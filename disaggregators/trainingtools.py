@@ -4,6 +4,7 @@ import torch
 import numpy as np
 import pytorch_lightning as pl
 import torch.nn.functional as F
+import torchmetrics.functional
 
 from disaggregators.NILM_metrics import NILMMetrics
 
@@ -60,7 +61,8 @@ class ClassicTrainingTools(pl.LightningModule):
         # x must be in shape [batch_size, 1, window_size]
         x, y = batch
         outputs = self(x)
-        loss = F.mse_loss(outputs.squeeze(1), y)
+        # loss = F.mse_loss(outputs.squeeze(1), y)
+        loss = self._compute_loss(outputs, y)
         tensorboard_logs = {'train_loss': loss}
         return {'loss': loss, 'log': tensorboard_logs}
 
@@ -72,7 +74,8 @@ class ClassicTrainingTools(pl.LightningModule):
     def test_step(self, batch, batch_idx):
         x, y = batch
         outputs = self(x)
-        loss = F.mse_loss(outputs.squeeze(), y.squeeze())
+        # loss = F.mse_loss(outputs.squeeze(), y.squeeze())
+        loss = self._compute_loss(outputs, y)
         preds_batch = outputs.squeeze().cpu().numpy()
         self.final_preds = np.append(self.final_preds, preds_batch)
         return {'test_loss': loss}
@@ -92,8 +95,14 @@ class ClassicTrainingTools(pl.LightningModule):
     def validation_step(self, batch, batch_idx):
         x, y = batch
         outputs = self(x)
-        loss = F.mse_loss(outputs.squeeze(1), y)
+        # loss = F.mse_loss(outputs.squeeze(1), y)
+        loss = self._compute_loss(outputs, y)
         self.log('val_loss', loss, prog_bar=True)
+
+    def _compute_loss(self, outputs, y):
+        # loss = torchmetrics.functional.mean_absolute_error(outputs.squeeze(1), y)
+        loss = F.mse_loss(outputs.squeeze(), y.squeeze())
+        return loss
 
     def _metrics(self):
         device, mmax, groundtruth = self.eval_params['device'], \

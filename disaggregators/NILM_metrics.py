@@ -2,7 +2,10 @@ import numpy as np
 import torch
 
 
-def NILMMetrics(pred, ground, threshold=40, mmax=None, round_digit=3):
+def NILMMetrics(pred, ground, threshold=40, mmax=None, round_digit=3, isKW=True):
+    if isKW:
+        threshold = threshold/1000
+
     def tp_tn_fp_fn(states_pred, states_ground):
         tp = np.sum(np.logical_and(states_pred == 1, states_ground == 1))
         fp = np.sum(np.logical_and(states_pred == 1, states_ground == 0))
