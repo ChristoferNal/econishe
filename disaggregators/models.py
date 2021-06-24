@@ -39,6 +39,7 @@ class WGRU(nn.Module):
 
     def __init__(self, dropout=0, lr=None):
         super(WGRU, self).__init__()
+        self.architecture_name = "WGRU"
 
         self.drop = dropout
         self.lr = lr
@@ -83,14 +84,14 @@ class SAED(nn.Module):
 
     def __init__(self, window_size, mode='dot', hidden_dim=16,
                  num_heads=1, dropout=0, lr=None):
+        '''
+         mode(str): 'dot' or 'general'--> additive
+             default is 'dot' (additive attention not supported yet)
+         ***in order for the mhattention to work, embed_dim should be dividable
+         to num_heads (embed_dim is the hidden dimension inside mhattention
+         '''
         super(SAED, self).__init__()
-
-        '''
-        mode(str): 'dot' or 'general'--> additive
-            default is 'dot' (additive attention not supported yet)
-        ***in order for the mhattention to work, embed_dim should be dividable
-        to num_heads (embed_dim is the hidden dimension inside mhattention
-        '''
+        self.architecture_name = "SAED"
         if num_heads > hidden_dim:
             num_heads = 1
             print('WARNING num_heads > embed_dim so it is set equal to 1')

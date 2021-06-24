@@ -11,7 +11,9 @@ COLUMN_DATE = 'localminute'
 class PowerDataset(Dataset):
     """Power dataset."""
 
-    def __init__(self, path, device, start_date="2018-01-01", end_date="2018-02-16", should_normalize=True):
+    def __init__(self, path, device,
+                 start_date="2018-01-01", end_date="2018-02-16",
+                 should_normalize=True, window_size=50, ):
         """
         Args:
             path (string): Path to the csv file.
@@ -25,6 +27,7 @@ class PowerDataset(Dataset):
         self.device = device
         self.start_date = start_date
         self.end_date = end_date
+        self.window_size = window_size
 
         cols = [COLUMN_DATE, COLUMN_MAINS, device]
         data = pd.read_csv(path, usecols=cols)
@@ -35,46 +38,50 @@ class PowerDataset(Dataset):
         mainchunk = data[COLUMN_MAINS]
         meterchunk = data[self.device]
 
+        # mainchunk, meterchunk = self._align_chunks(mainchunk, meterchunk)
         if should_normalize:
-            mainchunk, meterchunk = self._normalize(mainchunk, meterchunk)
-        self._fill_gaps(mainchunk, meterchunk)
-        mainchunk, meterchunk = self._align_data(mainchunk, meterchunk)
+            mainchunk, meterchunk = self._normalize_chunks(mainchunk, meterchunk)
+        mainchunk, meterchunk = self._replace_nans(mainchunk, meterchunk)
+        mainchunk, meterchunk = self._apply_rolling_window(mainchunk.ravel(), meterchunk.ravel())
+        self.mainchunk, self.meterchunk = torch.from_numpy(np.array(mainchunk)), torch.from_numpy(
+            np.array(meterchunk))
 
-        mainchunk = np.reshape(mainchunk, (mainchunk.shape[0], 1, 1))
-        self.mainchunk = mainchunk
-        self.meterchunk = np.reshape(meterchunk, (len(meterchunk), -1))
-
-    def _align_data(self, mainchunk, meterchunk):
-        ix = mainchunk.index.intersection(meterchunk.index)
-        mainchunk = np.array(mainchunk[ix])
-        meterchunk = np.array(meterchunk[ix])
+    def _apply_rolling_window(self, mainchunk, meterchunk):
+        indexer = np.arange(self.window_size)[None, :] + np.arange(len(mainchunk) - self.window_size + 1)[:, None]
+        mainchunk = mainchunk[indexer]
+        meterchunk = meterchunk[self.window_size - 1:]
         return mainchunk, meterchunk
 
-    def _fill_gaps(self, mainchunk, meterchunk):
+    def _replace_nans(self, mainchunk, meterchunk):
         mainchunk.fillna(0, inplace=True)
         meterchunk.fillna(0, inplace=True)
+        return mainchunk, meterchunk
 
-    def _normalize(self, mainchunk, meterchunk):
-        if self.mmax == None:
+    def _normalize_chunks(self, mainchunk, meterchunk):
+        if self.mmax is None:
             self.mmax = mainchunk.max()
         mainchunk = mainchunk / self.mmax
         meterchunk = meterchunk / self.mmax
+        return mainchunk, meterchunk
+
+    def _align_chunks(self, mainchunk, meterchunk):
+        mainchunk = mainchunk[~mainchunk.index.duplicated()]
+        meterchunk = meterchunk[~meterchunk.index.duplicated()]
+        ix = mainchunk.index.intersection(meterchunk.index)
+        mainchunk = mainchunk[ix]
+        meterchunk = meterchunk[ix]
         return mainchunk, meterchunk
 
     def __len__(self):
         return len(self.mainchunk)
 
     def __getitem__(self, i):
-        x = torch.from_numpy(self.mainchunk)
-        y = torch.from_numpy(self.meterchunk)
-        return x[i], y[i]
+        return self.mainchunk[i].float(), self.meterchunk[i].float()
 
     def __mmax__(self):
         return self.mmax
-
 
 # dataset = PowerDataset(path='../data/house_7901.csv', device='microwave1')
 # train_loader = DataLoader(dataset, batch_size=1, shuffle=False, num_workers=8)
 # for i, data in enumerate(train_loader):
 #     return i, x, y
-
