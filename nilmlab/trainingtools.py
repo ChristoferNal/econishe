@@ -1,12 +1,9 @@
-import math
-
 import torch
 import numpy as np
 import pytorch_lightning as pl
 import torch.nn.functional as F
-import torchmetrics.functional
 
-from disaggregators.NILM_metrics import NILMMetrics
+from nilmlab.NILM_metrics import NILMMetrics
 
 # pl.seed_everything(42)
 
@@ -31,7 +28,7 @@ ON_THRESHOLDS = {'dishwasher1'    : 10,
 
 class ClassicTrainingTools(pl.LightningModule):
 
-    def __init__(self, model, eval_params, learning_rate=0.1):
+    def __init__(self, model, eval_params, learning_rate=0.001):
         """
         Inputs:
             model_name - Name of the model to run. Used for creating the model (see function below)
@@ -40,9 +37,9 @@ class ClassicTrainingTools(pl.LightningModule):
         super().__init__()
         self.learning_rate = learning_rate
         # Exports the hyperparameters to a YAML file, and create "self.hparams" namespace
-        self.save_hyperparameters()
         # Create model
         self.model = model
+        self.save_hyperparameters()
 
         self.eval_params = eval_params
         self.model_name = self.model.architecture_name
@@ -55,7 +52,7 @@ class ClassicTrainingTools(pl.LightningModule):
         return self.model(x)
 
     def configure_optimizers(self):
-        return torch.optim.Adam(self.parameters(), self.learning_rate)
+        return torch.optim.Adam(self.model.parameters())
 
     def training_step(self, batch, batch_idx):
         # x must be in shape [batch_size, 1, window_size]
@@ -101,6 +98,7 @@ class ClassicTrainingTools(pl.LightningModule):
 
     def _compute_loss(self, outputs, y):
         # loss = torchmetrics.functional.mean_absolute_error(outputs.squeeze(1), y)
+        # loss = torchmetrics.functional.regression.mean_squared_log_error(outputs.squeeze(1), y)
         loss = F.mse_loss(outputs.squeeze(), y.squeeze())
         return loss
 

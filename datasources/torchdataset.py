@@ -13,7 +13,7 @@ class PowerDataset(Dataset):
 
     def __init__(self, path, device,
                  start_date="2018-01-01", end_date="2018-02-16",
-                 should_normalize=True, window_size=50, ):
+                 should_normalize=True, window_size=50):
         """
         Args:
             path (string): Path to the csv file.
@@ -22,6 +22,7 @@ class PowerDataset(Dataset):
             end_date: the last date e.g. '2017-04-01'.
         """
 
+        self.main_mmax = None
         self.mmax = None
         self.path = path
         self.device = device
@@ -31,7 +32,8 @@ class PowerDataset(Dataset):
 
         cols = [COLUMN_DATE, COLUMN_MAINS, device]
         data = pd.read_csv(path, usecols=cols)
-
+        # data.resample('3S')
+        # data = data.drop_duplicates(subset=device)
         if self.start_date and self.end_date:
             data = data[(data[COLUMN_DATE] >= self.start_date) & (data[COLUMN_DATE] <= self.end_date)]
 
@@ -58,9 +60,12 @@ class PowerDataset(Dataset):
         return mainchunk, meterchunk
 
     def _normalize_chunks(self, mainchunk, meterchunk):
+        if self.main_mmax is None:
+            self.main_mmax = mainchunk.max()
         if self.mmax is None:
-            self.mmax = mainchunk.max()
-        mainchunk = mainchunk / self.mmax
+            self.mmax = meterchunk.max()
+
+        mainchunk = mainchunk / self.main_mmax
         meterchunk = meterchunk / self.mmax
         return mainchunk, meterchunk
 
@@ -76,7 +81,9 @@ class PowerDataset(Dataset):
         return len(self.mainchunk)
 
     def __getitem__(self, i):
-        return self.mainchunk[i].float(), self.meterchunk[i].float()
+        a, b = self.mainchunk[i].float(), self.meterchunk[i].float()
+        # print(f"main {a}, meter {b}")
+        return a, b
 
     def __mmax__(self):
         return self.mmax

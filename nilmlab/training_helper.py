@@ -2,17 +2,17 @@ import os
 
 import numpy as np
 import pytorch_lightning as pl
-from pytorch_lightning.callbacks import ModelCheckpoint
+import torch
 from torch.utils.data import DataLoader, random_split
 
 from config import paths_manager
 from datasources.torchdataset import PowerDataset
-from disaggregators.trainingtools import ClassicTrainingTools
-from lab.report import save_report
+from nilmlab.trainingtools import ClassicTrainingTools
+from nilmlab.report import save_report
 
 
 def train_val_report(model, house_path, appliance, epochs, batch, window, val=False):
-    dataset = PowerDataset(path=house_path, device=appliance)
+    dataset = PowerDataset(path=house_path, device=appliance, window_size=window)
     val_loader = None
     if val:
         valsize = len(dataset) // 5
@@ -67,3 +67,5 @@ def train_val_report(model, house_path, appliance, epochs, batch, window, val=Fa
     preds = test_result['preds']
     save_report(root_dir=paths_manager.get_report_path(appliance, model_name), results=results, preds=preds,
                 ground=valdata)
+
+    torch.save(model.model.state_dict(), paths_manager.get_saved_models_path())

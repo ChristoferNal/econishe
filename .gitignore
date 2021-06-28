@@ -130,4 +130,4 @@ dmypy.json
 .pyre/
 /data/
 /report/
-/lab/lightning_logs/
+/nilmlab/lightning_logs/

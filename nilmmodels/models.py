@@ -1,3 +1,4 @@
+import torch
 from torch import nn
 from torchnlp.nn import Attention
 
@@ -74,6 +75,8 @@ class WGRU(nn.Module):
         # Next we have to take only the last hidden state of the last b2gru
         # equivalent of return_sequences=False
         x = x[:, -1, :]
+        # x = x.reshape(-1, 512 * 50)
+
         x = self.dense1(x)
         x = self.dense2(x)
         out = self.output(x)
@@ -135,6 +138,40 @@ class SAED(nn.Module):
         # Next we have to take only the last hidden state of the last b1gru
         # equivalent of return_sequences=False
         x = x[:, -1, :]
+        # x = x.reshape(-1, 128 * 50)
+
+        x = self.dense(x)
+        out = self.output(x)
+        return out
+
+
+class Seq2Point(nn.Module):
+
+    def __init__(self, window_size, dropout=0, lr=None):
+        super(Seq2Point, self).__init__()
+        self.architecture_name = "Seq2Point"
+        self.drop = dropout
+        self.lr = lr
+        self.last_conv_output = 10
+
+        self.dense_input = self.last_conv_output * window_size  # 50 is the out_features of last CNN1
+
+        self.conv = nn.Sequential(
+            ConvLayer(1, 30, kernel_size=10, dropout=self.drop),
+            ConvLayer(30, 40, kernel_size=8, dropout=self.drop),
+            ConvLayer(40, 50, kernel_size=6, dropout=self.drop),
+            ConvLayer(50, 50, kernel_size=5, dropout=self.drop),
+            ConvLayer(50, self.last_conv_output, kernel_size=5, dropout=self.drop),
+            nn.Flatten()
+        )
+        self.dense = LinearDropoutLayer(self.dense_input, 1024, self.drop)
+        self.output = nn.Linear(1024, 1)
+
+    def forward(self, x):
+        # x must be in shape [batch_size, 1, window_size]
+        # eg: [1024, 1, 50]
+        x = x.unsqueeze(1)
+        x = self.conv(x)
         x = self.dense(x)
         out = self.output(x)
         return out
