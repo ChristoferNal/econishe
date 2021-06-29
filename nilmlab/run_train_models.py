@@ -1,12 +1,13 @@
+from nilmmodels.disaggregators import SAEDDisagregator
 from nilmmodels.models import SAED, WGRU, Seq2Point
 from nilmlab.training_helper import train_val_report
 import pytorch_lightning as pl
 
-EPOCHS = 5
-WINDOW = 50
+EPOCHS = 10
+WINDOW = 300
 BATCH = 1024
 appliances = ['microwave1', 'dishwasher1', 'furnace1', 'refrigerator1', 'drye1', 'air1', 'bedroom1', 'bedroom2']
-appliances = ['furnace1']
+appliances = ['microwave1']
 # pl.seed_everything(45)
 house_path = '../data/house_7901.csv'
 # house_path = '../data/house_5746.csv'

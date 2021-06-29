@@ -55,11 +55,14 @@ def train_val_report(model, house_path, appliance, epochs, batch, window, val=Fa
         model.set_ground(valdata)
 
     checkpointpath = paths_manager.get_checkpoints_path(appliance, model_name)
+    # torch.save(model.model.state_dict(), paths_manager.get_saved_models_path(appliance, model_name))
+    torch.save(model.model.state_dict(), paths_manager.get_saved_models_path(appliance, model_name))
     trainer.save_checkpoint(os.path.join(checkpointpath, "last.ckpt"))
+    test_model(appliance, model, model_name, train_loader, trainer, valdata)
 
+
+def test_model(appliance, model, model_name, train_loader, trainer, valdata):
     # new_model = model.load_from_checkpoint(checkpoint_path=os.path.join(checkpointpath, "last.ckpt"))
-
-
     res = trainer.test(model, test_dataloaders=train_loader)
     print(res)
     test_result = model.get_res()
@@ -67,5 +70,3 @@ def train_val_report(model, house_path, appliance, epochs, batch, window, val=Fa
     preds = test_result['preds']
     save_report(root_dir=paths_manager.get_report_path(appliance, model_name), results=results, preds=preds,
                 ground=valdata)
-
-    torch.save(model.model.state_dict(), paths_manager.get_saved_models_path())

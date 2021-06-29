@@ -21,8 +21,6 @@ class PowerDataset(Dataset):
             start_date: the first date e.g. '2016-04-01'.
             end_date: the last date e.g. '2017-04-01'.
         """
-
-        self.main_mmax = None
         self.mmax = None
         self.path = path
         self.device = device
@@ -60,12 +58,10 @@ class PowerDataset(Dataset):
         return mainchunk, meterchunk
 
     def _normalize_chunks(self, mainchunk, meterchunk):
-        if self.main_mmax is None:
-            self.main_mmax = mainchunk.max()
         if self.mmax is None:
-            self.mmax = meterchunk.max()
+            self.mmax = mainchunk.max()
 
-        mainchunk = mainchunk / self.main_mmax
+        mainchunk = mainchunk / self.mmax
         meterchunk = meterchunk / self.mmax
         return mainchunk, meterchunk
 

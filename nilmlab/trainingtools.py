@@ -35,7 +35,7 @@ class ClassicTrainingTools(pl.LightningModule):
             model_hparams - Hyperparameters for the model, as dictionary.
         """
         super().__init__()
-        self.learning_rate = learning_rate
+        # self.learning_rate = learning_rate
         # Exports the hyperparameters to a YAML file, and create "self.hparams" namespace
         # Create model
         self.model = model

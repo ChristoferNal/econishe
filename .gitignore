@@ -131,3 +131,4 @@ dmypy.json
 /data/
 /report/
 /nilmlab/lightning_logs/
+/saved_models/
