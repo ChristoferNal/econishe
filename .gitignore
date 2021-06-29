@@ -129,3 +129,6 @@ dmypy.json
 # Pyre type checker
 .pyre/
 /data/
+/report/
+/nilmlab/lightning_logs/
+/saved_models/
